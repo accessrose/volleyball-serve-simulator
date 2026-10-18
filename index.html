@@ -9,7 +9,11 @@ h1{font-size:1.2rem;margin:0 0 12px}h2{font-size:1rem;margin:0;font-weight:750}
 .controls{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:18px;align-items:center}
 .control label{display:flex;justify-content:space-between;gap:8px;font-weight:750;font-size:.94rem;margin-bottom:9px}
 output{white-space:nowrap;font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;accent-color:#9ac8ff}
+input[type=range]{width:100%;accent-color:#9ac8ff;cursor:pointer;touch-action:pan-y; -webkit-appearance:none;appearance:none;background:transparent;height:28px;}
+input[type=range]::-webkit-slider-runnable-track{height:6px;background:#d1d5db;border-radius:99px;}
+input[type=range]::-moz-range-track{height:6px;background:#d1d5db;border-radius:99px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;margin-top:-5px;border-radius:50%;background:#9ac8ff;border:0;}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:#9ac8ff;}
 .hint{font-size:.78rem;color:#718096;margin-top:6px}
 .check{display:flex;align-items:center;gap:8px;font-size:.9rem;margin-top:8px}
 .head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
@@ -91,6 +95,12 @@ function stop(){playing=false;if(raf)cancelAnimationFrame(raf);raf=null;started=
 function frame(ts){if(!playing)return;if(started===null)started=ts;const t=(ts-started)/1000;const end=points.at(-1).t;if(t>=end){stop();drawSide();return;}drawSide(t);raf=requestAnimationFrame(frame);}
 $('play').addEventListener('click',()=>{if(playing){stop();drawSide();return;}playing=true;started=null;$('play').textContent='⏸ 停止';raf=requestAnimationFrame(frame);});
 $('reset').addEventListener('click',()=>{stop();calc();});
-['speed','angle','height','drag'].forEach(id=>$(id).addEventListener('input',()=>{stop();calc();}));
+['speed','angle','height'].forEach(id=>{
+ const slider=$(id);
+ slider.addEventListener('input',()=>{stop();calc();});
+ // Keep native range dragging active; pointer interaction should not require repeated clicks.
+ slider.addEventListener('pointerdown',()=>{slider.focus({preventScroll:true});});
+});
+$('drag').addEventListener('change',()=>{stop();calc();});
 calc();
 </script></body></html>
