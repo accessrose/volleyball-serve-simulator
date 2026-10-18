@@ -21,8 +21,31 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 .primary{background:#234ee8;color:#fff}.secondary{background:#e2e8f0;color:#243044}
 canvas{display:block;width:100%;height:auto;background:#f8fbff;border-radius:10px}
 .caption{font-size:.88rem;line-height:1.6;color:#687f9e;margin-top:12px}
-@media(max-width:760px){body{padding:7px}.panel{padding:12px}.controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.head{align-items:flex-start;flex-wrap:wrap}}
-@media(max-width:420px){.controls{grid-template-columns:1fr}}
+@media(max-width:760px){
+ body{padding:5px}
+ .panel{padding:9px;margin-bottom:8px;border-radius:11px}
+ .controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 12px}
+ .control label{font-size:.82rem;margin-bottom:2px;gap:4px}
+ .hint{font-size:.68rem;margin-top:1px;line-height:1.2}
+ input[type=range]{height:18px;margin:0}
+ input[type=range]::-webkit-slider-runnable-track{height:4px}
+ input[type=range]::-moz-range-track{height:4px}
+ input[type=range]::-webkit-slider-thumb{width:14px;height:14px;margin-top:-5px}
+ input[type=range]::-moz-range-thumb{width:14px;height:14px}
+ .check{font-size:.78rem;margin-top:2px;gap:4px}
+ .head{align-items:center;flex-wrap:wrap;margin-bottom:5px}
+ h2{font-size:.9rem}
+ .actions{gap:5px}
+ button{padding:7px 9px;font-size:.8rem}
+ .caption{font-size:.75rem;line-height:1.4;margin-top:6px}
+ canvas{border-radius:7px}
+}
+@media(max-width:420px){
+ .controls{grid-template-columns:1fr 1fr}
+ .panel{padding:8px}
+ .control label{font-size:.78rem}
+ .hint{font-size:.64rem}
+}
 </style></head><body><main>
 <section class="panel">
 <div class="controls">
@@ -56,10 +79,10 @@ function calc(){
 }
 function drawSide(ballT=null){
  const c=$('sideView'),ctx=c.getContext('2d'),W=c.width,H=c.height;ctx.clearRect(0,0,W,H);ctx.fillStyle='#fbfdff';ctx.fillRect(0,0,W,H);
- const L=65,R=W-28,T=28,B=H-58, xmax=20,ymax=8;
+ const L=65,R=W-28,T=28,B=H-58, xmax=18,ymax=8;
  const X=x=>L+x/xmax*(R-L),Y=z=>B-z/ymax*(B-T);
  ctx.strokeStyle='#e1e8f1';ctx.lineWidth=1.5;ctx.font='16px system-ui';ctx.fillStyle='#7184a0';
- for(let x=0;x<=20;x+=2){ctx.beginPath();ctx.moveTo(X(x),T);ctx.lineTo(X(x),B);ctx.stroke();ctx.fillText(x+'m',X(x)-12,B+32);}
+ for(let x=0;x<=18;x+=2){ctx.beginPath();ctx.moveTo(X(x),T);ctx.lineTo(X(x),B);ctx.stroke();ctx.fillText(x+'m',X(x)-12,B+32);}
  for(let z=0;z<=8;z++){ctx.beginPath();ctx.moveTo(L,Y(z));ctx.lineTo(R,Y(z));ctx.stroke();ctx.fillText(z+'m',10,Y(z)+5);}
  // court floor
  ctx.strokeStyle='#30435d';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(X(0),B);ctx.lineTo(X(18),B);ctx.stroke();
