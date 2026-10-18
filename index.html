@@ -61,7 +61,7 @@ canvas{display:block;width:100%;height:auto;background:#f8fbff;border-radius:10p
 <div class="head"><h2>軌道（横から見た図）</h2><div class="actions"><button class="primary" id="play">▶ 再生</button><button class="secondary" id="reset">初期位置へ</button></div></div>
 <div id="resultFlag" class="resultFlag" role="status" aria-live="polite">判定中…</div>
 <canvas id="sideView" width="1200" height="500" aria-label="横から見たボールの軌道"></canvas>
-<div class="caption">青線：ボールの軌道　紫：最高点　濃いグレー：ネット（高さ2.24m）　赤：ネット通過地点の高さと補助線　赤い三角▼：アタックライン（6m・12m）の位置。コートはネットまで9m、ネットから相手側エンドラインまで9mとして表示。</div>
+<div class="caption">青線：ボールの軌道　紫：最高点　濃いグレー：ネット（高さ2.24m）　赤：ネット通過時点の隙間と補助線　赤い三角▼：アタックライン（6m・12m）の位置。コートはネットまで9m、ネットから相手側エンドラインまで9mとして表示。</div>
 </section>
 </main>
 <script>
@@ -135,12 +135,18 @@ function drawSide(ballT=null){
  ctx.setLineDash([7,6]);ctx.strokeStyle='#dc2626';ctx.lineWidth=2.5;
  ctx.beginPath();ctx.moveTo(netX,B);ctx.lineTo(netX,crossY);ctx.stroke();ctx.setLineDash([]);
  ctx.fillStyle='#dc2626';ctx.beginPath();ctx.arc(netX,crossY,6,0,Math.PI*2);ctx.fill();
- const crossLabel='ネット通過地点の高さ '+netCross.z.toFixed(2)+'m';
- ctx.font='bold 22px system-ui';
- const crossWidth=ctx.measureText(crossLabel).width;
- const crossLabelX=Math.max(L+4,Math.min(netX+12,R-crossWidth-4));
- const crossLabelY=Math.max(T+26,Math.min(crossY-12,B-12));
- ctx.fillText(crossLabel,crossLabelX,crossLabelY);
+ const gap=netCross.z-ballR-netH;
+ const gapTopY=Y(netCross.z-ballR), gapBottomY=Y(netH);
+ // ネット上端からボール下端までの垂直な隙間を赤い破線で表示
+ ctx.setLineDash([5,4]);ctx.strokeStyle='#dc2626';ctx.lineWidth=3;
+ ctx.beginPath();ctx.moveTo(netX,gapBottomY);ctx.lineTo(netX,gapTopY);ctx.stroke();ctx.setLineDash([]);
+ // 隙間ラベルはネット端部と12m地点の間に、2行で配置する
+ ctx.font='bold 18px system-ui';
+ ctx.fillStyle='#dc2626';
+ const crossLabelX=netX+12;
+ const crossLabelY=Y(3.65);
+ ctx.fillText('ネット通過時点の',crossLabelX,crossLabelY);
+ ctx.fillText('隙間 '+Math.max(0,gap).toFixed(2)+'m',crossLabelX,crossLabelY+25);
  const ni=points.findIndex(p=>p.x>=9);const split=ni<0?points.length-1:ni;
  function path(a,b,color,dash){ctx.beginPath();let started=false;for(let i=a;i<=b&&i<points.length;i++){let p=points[i];if(!started){ctx.moveTo(X(p.x),Y(p.z));started=true;}else ctx.lineTo(X(p.x),Y(p.z));}ctx.strokeStyle=color;ctx.lineWidth=4;ctx.setLineDash(dash);ctx.stroke();ctx.setLineDash([]);}
  path(0,split,'#2f6bff',[]);
@@ -148,7 +154,7 @@ function drawSide(ballT=null){
  // Draw the net after the trajectory so its solid line is clearly in the foreground
  ctx.setLineDash([]);ctx.strokeStyle='#475569';ctx.lineWidth=4;
  ctx.beginPath();ctx.moveTo(netX,Y(0));ctx.lineTo(netX,Y(netH));ctx.stroke();
- ctx.fillStyle='#334155';ctx.font='bold 21px system-ui';ctx.textAlign='right';ctx.fillText('ネット 2.24m',netX-10,Y(1)-6);ctx.textAlign='left';
+ ctx.fillStyle='#334155';ctx.font='bold 21px system-ui';ctx.textAlign='left';ctx.fillText('ネット 2.24m',netX+10,Y(1)-6);ctx.textAlign='left';
  const b=ballT===null?points[0]:points.reduce((a,p)=>Math.abs(p.t-ballT)<Math.abs(a.t-ballT)?p:a,points[0]);
  ctx.fillStyle='#f59e0b';ctx.strokeStyle='#9a4c06';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X(b.x),Y(b.z),6,0,Math.PI*2);ctx.fill();ctx.stroke();
 }
