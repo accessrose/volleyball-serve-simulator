@@ -55,7 +55,7 @@ canvas{display:block;width:100%;height:auto;background:#f8fbff;border-radius:10p
  <div class="control"><label for="speed">初速 <output id="speedOut">12.8 m/s</output></label><input id="speed" type="range" min="4" max="22" step=".2" value="12.8"><div class="hint">時速換算 <b id="kmh">46.1 km/h</b></div></div>
  <div class="control"><label for="angle">打ち出し角度 <output id="angleOut">45°</output></label><input id="angle" type="range" min="2" max="75" step="1" value="45"><div class="hint">水平から上向きの角度</div></div>
  <div class="control"><label for="height">打点の高さ <output id="heightOut">1.25 m</output></label><input id="height" type="range" min=".5" max="2.5" step=".05" value="1.25"><div class="hint">床からボール中心まで</div></div>
- <div class="control"><label>空気抵抗</label><div class="check"><input id="drag" type="checkbox" checked> <span>空気抵抗を計算に入れる</span></div><div class="hint">体育館の無風状態を想定（Cd=0.20）。回転・風は未対応</div></div>
+ <div class="control"><label>空気抵抗</label><div class="check"><input id="drag" type="checkbox" checked> <span>空気抵抗を計算に入れる</span></div><div class="hint">4号球想定：円周62〜63cm・重量240〜260g・空気圧500±20 gf/cm²。回転・風は未対応</div></div>
 </div></section>
 <section class="panel">
 <div class="head"><h2>軌道（横から見た図）</h2><div class="actions"><button class="primary" id="play">▶ 再生</button><button class="secondary" id="reset">初期位置へ</button></div></div>
@@ -66,7 +66,7 @@ canvas{display:block;width:100%;height:auto;background:#f8fbff;border-radius:10p
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const g=9.81, ballR=.105, netH=2.24, mass=.26, rho=1.2, cd=.20, area=Math.PI*ballR*ballR;
+const g=9.81, ballR=.0625/(2*Math.PI), netH=2.24, mass=.25, rho=1.2, cd=.20, area=Math.PI*ballR*ballR; // 4号球想定：円周62.5cm、質量250g。空気圧500±20 gf/cm²は仕様表示。
 let points=[],playing=false,raf=null,started=null;
 function calc(){
  const v=+$('speed').value,ang=+$('angle').value*Math.PI/180,h=+$('height').value,drag=$('drag').checked;
