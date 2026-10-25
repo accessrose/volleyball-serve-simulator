@@ -7,6 +7,13 @@
 .panel{background:#fff;border:1px solid #d5dde7;border-radius:15px;padding:16px;margin-bottom:14px}
 h1{font-size:1.2rem;margin:0 0 12px}h2{font-size:1rem;margin:0;font-weight:750}
 .controls{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:18px;align-items:center}
+.spinViz{display:flex;align-items:center;gap:10px;margin-top:3px}
+.spinBall{width:46px;height:46px;flex:0 0 46px;border-radius:50%;border:2px solid #8b5a2b;background:radial-gradient(circle at 30% 25%,#fff7df,#f4b34f 65%,#d97706);position:relative;overflow:hidden;box-shadow:inset -4px -3px 6px #9a5b1d55}
+.spinSeam{position:absolute;inset:-5px;border:2px solid #fff8e8;border-radius:50%;transform:rotate(35deg) scaleX(.48)}
+.spinSeam:after{content:"";position:absolute;inset:0;border:2px solid #fff8e8;border-radius:50%;transform:rotate(90deg) scaleX(1.4)}
+.spinBall.spinning .spinSeam{animation:ballSpin var(--spin-duration,1s) linear infinite}
+@keyframes ballSpin{to{transform:rotate(360deg) scaleX(.48)}}
+.spinCaption{font-size:.75rem;color:#536782;line-height:1.35}
 .control label{display:flex;justify-content:space-between;gap:8px;font-weight:750;font-size:.94rem;margin-bottom:9px}
 output{white-space:nowrap;font-variant-numeric:tabular-nums}
 input[type=range]{width:100%;accent-color:#9ac8ff;cursor:pointer;touch-action:pan-y; -webkit-appearance:none;appearance:none;background:transparent;height:28px;}
@@ -18,7 +25,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 .check{display:flex;align-items:center;gap:8px;font-size:.9rem;margin-top:8px}
 .head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .actions{display:flex;gap:8px}button{border:0;border-radius:9px;padding:10px 14px;font-weight:800;cursor:pointer}
-.primary{background:#234ee8;color:#fff}.secondary{background:#e2e8f0;color:#243044}
+.primary{background:#234ee8;color:#fff}.secondary{background:#e2e8f0;color:#243044}.modeBtn{background:#0f766e;color:#fff}.modeBtn[aria-pressed="true"]{background:#334155}
 canvas{display:block;width:100%;height:auto;background:#f8fbff;border-radius:10px}
 .caption{font-size:.88rem;line-height:1.6;color:#687f9e;margin-top:12px}
 .resultFlag{margin-top:10px;padding:12px 15px;border-radius:10px;font-size:1.05rem;font-weight:850;background:#e8f7ed;color:#176534;border:2px solid #72c58b}
@@ -27,6 +34,8 @@ canvas{display:block;width:100%;height:auto;background:#f8fbff;border-radius:10p
  body{padding:5px}
  .panel{padding:9px;margin-bottom:8px;border-radius:11px}
  .controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 12px}
+ .spinBall{width:36px;height:36px;flex-basis:36px}
+ .spinCaption{font-size:.66rem}
  .control label{font-size:.82rem;margin-bottom:2px;gap:4px}
  .hint{font-size:.68rem;margin-top:1px;line-height:1.2}
  input[type=range]{height:18px;margin:0}
@@ -44,10 +53,24 @@ canvas{display:block;width:100%;height:auto;background:#f8fbff;border-radius:10p
  .resultFlag{font-size:.92rem;padding:9px 11px;margin-top:7px}
 }
 @media(max-width:420px){
- .controls{grid-template-columns:1fr 1fr}
- .panel{padding:8px}
- .control label{font-size:.78rem}
- .hint{font-size:.64rem}
+ body{padding:4px}
+ .controls{grid-template-columns:1fr;gap:12px}
+ .panel{padding:10px}
+ .control label{font-size:.9rem;margin-bottom:4px;align-items:baseline}
+ .control label output{font-size:.92rem}
+ .hint{font-size:.76rem;line-height:1.35}
+ input[type=range]{height:26px}
+ input[type=range]::-webkit-slider-runnable-track{height:6px}
+ input[type=range]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-6px}
+ .spinViz{gap:10px}
+ .spinBall{width:42px;height:42px;flex-basis:42px}
+ .spinCaption{font-size:.78rem}
+ .check{font-size:.9rem}
+ .head{align-items:flex-start}
+ .actions{width:100%}
+ .actions button{flex:1}
+ #contactClock{width:min(220px,70vw)!important;flex-basis:auto!important}
+ .caption{font-size:.8rem;line-height:1.5;overflow-wrap:anywhere}
 }
 </style></head><body><main>
 <section class="panel">
@@ -55,73 +78,177 @@ canvas{display:block;width:100%;height:auto;background:#f8fbff;border-radius:10p
  <div class="control"><label for="speed">初速 <output id="speedOut">12.8 m/s</output></label><input id="speed" type="range" min="4" max="22" step=".2" value="12.8"><div class="hint">時速換算 <b id="kmh">46.1 km/h</b></div></div>
  <div class="control"><label for="angle">打ち出し角度 <output id="angleOut">45°</output></label><input id="angle" type="range" min="2" max="75" step="1" value="45"><div class="hint">水平から上向きの角度</div></div>
  <div class="control"><label for="height">打点の高さ <output id="heightOut">1.25 m</output></label><input id="height" type="range" min=".5" max="2.5" step=".05" value="1.25"><div class="hint">床からボール中心まで</div></div>
- <div class="control"><label>空気抵抗</label><div class="check"><input id="drag" type="checkbox" checked> <span>空気抵抗を計算に入れる</span></div><div class="hint">4号球想定：円周62〜63cm・重量240〜260g・空気圧500±20 gf/cm²。回転・風は未対応</div></div>
+ <div class="control"><label for="setback">サーブ位置 <output id="setbackOut">後方 0.00 m</output></label><input id="setback" type="range" min="0" max="5" step=".25" value="0.5" style="direction:rtl"><div class="hint">エンドラインより後方へ0〜5m。後ろに下がるほどネットまでの距離が長くなります。</div></div>
+ <div class="control"><label>空気抵抗</label><div class="check"><input id="drag" type="checkbox" checked> <span>空気抵抗を計算に入れる</span></div><div class="hint">4号球想定：円周62〜63cm・重量240〜260g・空気圧500±20 gf/cm²</div></div>
+ <div class="control"><label>表示設定</label><div class="check"><input id="modeToggle" type="checkbox" checked> <span>軌道をたくさん表示</span></div><div class="check" style="margin-top:10px"><button class="modeBtn" id="optimizePosition" type="button">立ち位置を最適化</button></div></div>
 </div></section>
+
 <section class="panel">
 <div class="head"><h2>軌道（横から見た図）</h2><div class="actions"><button class="primary" id="play">▶ 再生</button><button class="secondary" id="reset">初期位置へ</button></div></div>
 <div id="resultFlag" class="resultFlag" role="status" aria-live="polite">判定中…</div>
 <canvas id="sideView" width="1200" height="500" aria-label="横から見たボールの軌道"></canvas>
-<div class="caption">青線：ボールの軌道　紫：最高点　濃いグレー：ネット（高さ2.24m）　赤：ネット通過時点の隙間と補助線　赤い三角▼：アタックライン（6m・12m）の位置。コートはネットまで9m、ネットから相手側エンドラインまで9mとして表示。</div>
+<div id="trajectoryDiff" class="resultFlag" style="display:none" aria-live="polite"></div>
+<div class="caption">青線：選択中の角度／細線：イン＝青、アウト＝赤（2°刻み）／紫：最高点／濃いグレー：ネット（2.24m）／赤：ネット通過時の隙間／赤い▼：アタックライン（6m・12m）。距離は自陣エンドライン基準。縮尺は固定で、サーブ位置は後方0〜5mで調整できます。</div>
+</section>
+<section class="panel">
+  <div class="head"><h2>サーブ軌道（上から見た図）</h2></div>
+  <div class="controls" style="margin-bottom:10px">
+    <div class="control"><label for="topSpeed">初速 <output id="topSpeedOut">12.8 m/s</output></label><input id="topSpeed" type="range" min="4" max="22" step=".2" value="12.8"><div class="hint">時速換算 <b id="topKmh">46.1 km/h</b>。上の図と連動します。</div></div>
+    <div class="control"><label for="lateralAngle">左右方向の角度 <output id="lateralAngleOut">0°</output></label><input id="lateralAngle" type="range" min="-30" max="30" step="1" value="0"><div class="hint">0°＝正面、＋＝左、－＝右。横から見た図の上下角度と連動します。</div></div>
+    <div class="control"><label for="serveLateral">サーブ位置（右サイドラインから） <output id="serveLateralOut">0.00 m</output></label><input id="serveLateral" type="range" min="0" max="3" step="0.25" value="1" style="transform:scaleX(-1)"><div class="hint">つまみを右から左へ動かすと、サーブ位置が右サイドラインから左へ移動します（最大3m）。</div></div>
+    <div class="control"><label for="setbackTop">サーブ位置（エンドラインから後方） <output id="setbackTopOut">後方 0.00 m</output></label><input id="setbackTop" type="range" min="0" max="5" step=".25" value="0.5" style="direction:rtl"><div class="hint">横から見た図と連動します。右へ動かすほどエンドラインから後ろへ下がります。</div></div>
+  </div>
+  <div id="positionOptimizeResult" class="resultFlag" style="display:none;margin-bottom:10px" aria-live="polite"></div><div id="currentDirectionLabel" class="hint" style="margin:0 0 8px;font-weight:700;color:#334155">現在の角度：高さ方向 1時半、左右 0°</div><div class="check" style="margin:0 0 10px"><button class="modeBtn" id="resetPositionForTriangle" type="button">選択した三角に合わせて立ち位置を再設定</button><span id="triangleTargetHint" class="hint">上の図で青い三角をクリックして選択</span></div>
+  <canvas id="topView" width="1200" height="650" aria-label="上から見たサーブ着地点の分散図"></canvas>
+  <div id="topResult" class="resultFlag" role="status" aria-live="polite">判定中…</div>
+  <div class="caption">着地点の分布図です。青＝イン（●・白抜き▲）、赤＝アウト。ネットミス・ネット手前落下は表示せず、サイドアウト・エンドラインアウトは赤い点で表示します。複数軌道表示は上下・左右とも2°刻み。右サイドライン＝0m、左サイドライン＝9mです。</div>
+</section>
+<section class="panel">
+ <div class="head"><h2>打点から、どの角度へ打ち出す？（時計の位置）</h2></div>
+ <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+  <svg id="contactClock" viewBox="0 0 220 220" role="img" aria-label="打ち出し角度を時計に見立てた図" style="width:min(220px,48vw);height:auto;flex:0 0 auto">
+   <circle cx="110" cy="110" r="72" fill="#f8fafc" stroke="#64748b" stroke-width="3"/>
+   <g id="clockSectors"></g>
+   <circle cx="110" cy="110" r="4" fill="#334155"/>
+   <g stroke="#94a3b8" stroke-width="1.5"><line x1="110" y1="38" x2="110" y2="182"/><line x1="38" y1="110" x2="182" y2="110"/></g>
+   <g fill="#334155" font-size="14" font-weight="700" text-anchor="middle"><text x="110" y="27">12時</text><text x="199" y="115">3時</text><text x="110" y="207">6時</text><text x="21" y="115">9時</text></g>
+   <path id="inRangeArc" d="" fill="none" stroke="#16a34a" stroke-width="12" stroke-linecap="round" opacity="0.9" style="display:none"/>
+   <line id="angleRay" x1="110" y1="110" x2="161" y2="59" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>
+   <path id="angleArrow" d="M151 62 L161 59 L158 69" fill="none" stroke="#dc2626" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle cx="110" cy="110" r="6" fill="#dc2626" stroke="white" stroke-width="2"/>
+  </svg>
+  <div style="flex:1;min-width:210px">
+   <div style="font-size:1.05rem;font-weight:800;margin-bottom:6px">打ち出し方向を時計でイメージ</div>
+   <div style="font-size:.9rem;line-height:1.6;color:#536782">赤い矢印は、ボールを打った瞬間の進行方向。水平に打ち出すと3時方向、真上なら12時方向です。角度スライダーと連動するので、例えば45°ならおよそ1時半方向（右向きの水平線から上へ45°）になります。</div>
+   <div class="hint" style="margin-top:8px">現在の打ち出し方向：<b id="contactPositionLabel">1時半方向</b></div>
+   <div class="hint" id="inClockRangeLabel" style="margin-top:5px">緑の弧：軌道たくさん表示でインになる角度の範囲</div>
+   <div class="hint">これはボール表面の打点ではなく、打点から見た「打ち出す向き」の図です。打点の高さは別のスライダーで調整します。</div>
+  </div>
+ </div>
 </section>
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const g=9.81, ballR=.0625/(2*Math.PI), netH=2.24, mass=.25, rho=1.2, cd=.20, area=Math.PI*ballR*ballR; // 4号球想定：円周62.5cm、質量250g。空気圧500±20 gf/cm²は仕様表示。
-let points=[],playing=false,raf=null,started=null;
-function calc(){
- const v=+$('speed').value,ang=+$('angle').value*Math.PI/180,h=+$('height').value,drag=$('drag').checked;
- let x=0,z=h,vx=v*Math.cos(ang),vz=v*Math.sin(ang),t=0,dt=.005;
- points=[{x,z,t}];
- while(z>=ballR&&t<8&&x<30){
-  let ax=0,az=-g;
-  if(drag){let sp=Math.hypot(vx,vz),k=.5*rho*cd*area/mass;ax=-k*sp*vx;az-=k*sp*vz;}
-  vx+=ax*dt;vz+=az*dt;x+=vx*dt;z+=vz*dt;t+=dt;points.push({x,z,t});
+const g=9.81, ballR=.0625/(2*Math.PI), netH=2.24, mass=.25, rho=1.2, cd=.20, area=Math.PI*ballR*ballR; // 4号球想定：円周62.5cm、質量250g。
+let points=[],angleLines=[],playing=false,raf=null,started=null,showMany=true;
+function simulate(angleDeg,yawDeg=0){
+ // 共通3次元物理モデル。横からは(x,z)、上からは(x,y)へ同じ軌道を投影する。
+ const v=+$('speed').value,elev=angleDeg*Math.PI/180,yaw=yawDeg*Math.PI/180,h=+$('height').value,drag=$('drag').checked;
+ let x=0,y=0,z=h;
+ let vx=v*Math.cos(elev)*Math.cos(yaw),vy=v*Math.cos(elev)*Math.sin(yaw),vz=v*Math.sin(elev);
+ let t=0,dt=.005;const out=[{x,y,z,t}];
+ while(z>=ballR&&t<8&&x<35){
+  let ax=0,ay=0,az=-g;const sp=Math.hypot(vx,vy,vz);
+  if(drag&&sp>0){const k=.5*rho*cd*area/mass;ax-=k*sp*vx;ay-=k*sp*vy;az-=k*sp*vz;}
+  vx+=ax*dt;vy+=ay*dt;vz+=az*dt;x+=vx*dt;y+=vy*dt;z+=vz*dt;t+=dt;out.push({x,y,z,t});
  }
- // 判定：ネット面(x=9m)でボール下端がネット上端を越えているか、
- // 相手側エンドライン(x=18m)より手前で床に落ちるかを確認する。
- const netIndex=points.findIndex(p=>p.x>=9);
- let netZ=null;
- if(netIndex>0){const a=points[netIndex-1],b=points[netIndex],f=(9-a.x)/(b.x-a.x);netZ=a.z+(b.z-a.z)*f;}
- const a=points[points.length-2]||points[0],b=points[points.length-1];
- const fLand=(a.z-ballR)/(a.z-b.z);
- const landX=a.x+(b.x-a.x)*Math.max(0,Math.min(1,fLand));
- let verdict='イン：ネットを越え、エンドライン内に落下',fault=false;
- if(netZ===null){verdict='フォールト：ネットまで届かない';fault=true;}
- else if(netZ-ballR<=netH){verdict='フォールト：ネットにかかる（通過地点 '+netZ.toFixed(2)+' m）';fault=true;}
- else if(landX>18){verdict='フォールト：相手側エンドラインを越える（着地点 '+landX.toFixed(2)+' m）';fault=true;}
- else if(landX<9){verdict='フォールト：ネットを越える前に落下';fault=true;}
- const flag=$('resultFlag');flag.textContent=fault?'フォールト':'イン';flag.classList.toggle('fault',fault);
- $('speedOut').textContent=v.toFixed(1)+' m/s';$('kmh').textContent=(v*3.6).toFixed(1)+' km/h';
- $('angleOut').textContent=Math.round(ang*180/Math.PI)+'°';$('heightOut').textContent=h.toFixed(2)+' m';
+ return out;
+}
+function heightAtX(arr,targetX){
+ for(let i=1;i<arr.length;i++) if(arr[i].x>=targetX){const a=arr[i-1],b=arr[i],f=(targetX-a.x)/(b.x-a.x);return a.z+(b.z-a.z)*f;}
+ return null;
+}
+function landingX(arr){
+ const a=arr[arr.length-2]||arr[0],b=arr[arr.length-1];
+ const f=(a.z-ballR)/(a.z-b.z);
+ return a.x+(b.x-a.x)*Math.max(0,Math.min(1,f));
+}
+function judgeTrajectory(arr, setback, candidateLateralStart=+$('serveLateral').value){
+ const netPos=9+setback,farEnd=18+setback,netZ=heightAtX(arr,netPos),landX=landingX(arr);
+ const land=landing3D(arr), lateral=candidateLateralStart+land.y;
+ let fault=false,reason='イン';
+ if(netZ===null){fault=true;reason='ネットまで届かない';}
+ else if(netZ-ballR<=netH){fault=true;reason='ネットにかかる';}
+ else if(landX<netPos){fault=true;reason='ネット手前に落下';}
+ else if(landX>farEnd){fault=true;reason='エンドラインを越える';}
+ else if(lateral<0||lateral>9){fault=true;reason='左右サイドラインを越える';}
+ return {fault,reason,landX,netZ,land,lateral};
+}
+function landing3D(arr){
+ const a=arr[arr.length-2]||arr[0],b=arr[arr.length-1];
+ const den=(a.z-b.z)||1,f=Math.max(0,Math.min(1,(a.z-ballR)/den));
+ return {x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f,t:a.t+(b.t-a.t)*f};
+}
+function calc(){
+ const v=+$('speed').value,ang=+$('angle').value,h=+$('height').value,drag=$('drag').checked,setback=+$('setback').value;
+ const yaw=+$('lateralAngle').value;
+ points=simulate(ang,yaw);
+ angleLines=[];
+ for(let a=2;a<=88;a+=2){const trajectory=simulate(a,yaw);angleLines.push({angle:a,points:trajectory,judge:judgeTrajectory(trajectory,setback)});}
+ const j=judgeTrajectory(points,setback);
+ const flag=$('resultFlag');
+ if(showMany){
+  const inAngles=angleLines.filter(item=>!item.judge.fault).map(item=>item.angle).sort((a,b)=>a-b);
+  if(inAngles.length){
+   const ranges=[];
+   for(const a of inAngles){const last=ranges[ranges.length-1];if(last&&a===last[1]+2)last[1]=a;else ranges.push([a,a]);}
+   const clockFor=a=>{const h=((3-a/30)%12+12)%12||12;const r=Math.round(h*2)/2;return Number.isInteger(r)?`${r}時`:`${Math.floor(r)}時半`;};
+   const netAngle=Math.atan((2.24-h)/(9+setback))*180/Math.PI;
+   flag.textContent=`ネット：${clockFor(netAngle)}　`+ranges.map(([lo,hi])=>`${clockFor(lo)}～${clockFor(hi)}`).join('、');
+   flag.classList.remove('fault');
+  }else{flag.textContent='インになる角度なし（すべてアウト）';flag.classList.add('fault');}
+ }else{
+  flag.textContent=j.fault?'フォールト：'+j.reason:'イン';
+  flag.classList.toggle('fault',j.fault);
+ }
+ $('setbackOut').textContent='後方 '+setback.toFixed(2)+' m';
+ $('setbackTop').value=String(setback); $('setbackTopOut').textContent='後方 '+setback.toFixed(2)+' m';
+ $('speedOut').textContent=v.toFixed(1)+' m/s';$('kmh').textContent=(v*3.6).toFixed(1)+' km/h';$('topSpeed').value=String(v);$('topSpeedOut').textContent=v.toFixed(1)+' m/s';$('topKmh').textContent=(v*3.6).toFixed(1)+' km/h';
+ $('angleOut').textContent=ang+'°';$('heightOut').textContent=h.toFixed(2)+' m';
+ $('trajectoryDiff').textContent=showMany?'細線は2°刻みの軌道、赤線はフォールト、青線はイン、太い青線は現在選択中の'+ang+'°です。最高点・ネット通過時の隙間などの補助表示は中央の40°軌道を基準にしています。':'軌道を1本だけ表示中：選択中の'+ang+'°です。最高点・ネット通過時の隙間などの補助表示もこの軌道を基準にしています。';
  drawSide();
+ updateAngleClock();
+ drawTop(); // 上から見た図も初期表示・設定変更のたびに再描画する
 }
 function drawSide(ballT=null){
  const c=$('sideView'),ctx=c.getContext('2d'),W=c.width,H=c.height;ctx.clearRect(0,0,W,H);ctx.fillStyle='#fbfdff';ctx.fillRect(0,0,W,H);
- const L=65,R=W-28,T=28,B=H-58, xmax=18,ymax=8;
+ const setback=+$('setback').value,netPos=9+setback,farEnd=18+setback;
+ const L=65,R=W-28,T=28,B=H-58, xmax=23,ymax=8;
  const X=x=>L+x/xmax*(R-L),Y=z=>B-z/ymax*(B-T);
+ // 軌道をたくさん表示する場合、補助表示は角度一覧の中央（40°）の軌道を基準にする。
+ // 1本表示の場合は、従来どおり選択中の軌道を基準にする。
+ const annotationItem=angleLines.find(item=>item.angle===40);
+ const annotationPoints=showMany&&annotationItem?annotationItem.points:points;
  ctx.strokeStyle='#e1e8f1';ctx.lineWidth=1.5;ctx.font='bold 23px system-ui';ctx.fillStyle='#536782';
- for(let x=0;x<=18;x+=3){ctx.beginPath();ctx.moveTo(X(x),T);ctx.lineTo(X(x),B);ctx.stroke();ctx.fillText(x+'m',X(x)-12,B+32);}
+ for(let x=0;x<=23;x+=3){ctx.beginPath();ctx.moveTo(X(x),T);ctx.lineTo(X(x),B);ctx.stroke();ctx.fillText(x+'m',X(x)-12,B+32);}
  for(let z=0;z<=8;z++){ctx.beginPath();ctx.moveTo(L,Y(z));ctx.lineTo(R,Y(z));ctx.stroke();ctx.fillText(z+'m',10,Y(z)+5);}
  // court floor
- ctx.strokeStyle='#30435d';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(X(0),B);ctx.lineTo(X(18),B);ctx.stroke();
- ctx.setLineDash([7,6]);ctx.strokeStyle='#9aabc0';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(X(18),T);ctx.lineTo(X(18),B);ctx.stroke();ctx.setLineDash([]);
- ctx.fillStyle='#334155';ctx.font='bold 21px system-ui';ctx.fillText('サーブ位置',X(0)+7,B-12);ctx.fillText('相手側エンドライン',X(15.1),B-12);
+ ctx.strokeStyle='#30435d';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(X(0),B);ctx.lineTo(X(farEnd),B);ctx.stroke();
+ // 自陣・相手側エンドラインを、ネットと同じ高さ(2.24m)まで立ち上げて見やすくする
+ ctx.setLineDash([5,4]);ctx.strokeStyle='#64748b';ctx.lineWidth=3;
+ for(const ex of [setback,farEnd]){ctx.beginPath();ctx.moveTo(X(ex),B);ctx.lineTo(X(ex),Y(netH));ctx.stroke();}
+ ctx.setLineDash([]);
+ // エンドラインは実際の位置に垂直線で表示。斜めの補助破線は使わない。
+ ctx.fillStyle='#334155';ctx.font='bold 21px system-ui';ctx.fillText('エンドライン（固定）',Math.min(X(setback)+7,R-205),B-12);ctx.fillText('エンドライン（固定）',Math.min(X(farEnd)-205,R-205),B-12);
+ // サーブ位置から自陣エンドラインまでの後方距離を寸法線で表示
+ const dimY=B-52, servePx=X(0), endPx=X(setback);
+ ctx.strokeStyle='#0f766e';ctx.fillStyle='#0f766e';ctx.lineWidth=2;
+ if(setback>0.001){
+   ctx.beginPath();ctx.moveTo(servePx,dimY);ctx.lineTo(endPx,dimY);ctx.stroke();
+   ctx.beginPath();ctx.moveTo(servePx,dimY);ctx.lineTo(servePx+7,dimY-4);ctx.lineTo(servePx+7,dimY+4);ctx.closePath();ctx.fill();
+   ctx.beginPath();ctx.moveTo(endPx,dimY);ctx.lineTo(endPx-7,dimY-4);ctx.lineTo(endPx-7,dimY+4);ctx.closePath();ctx.fill();
+   ctx.beginPath();ctx.moveTo(servePx,dimY-5);ctx.lineTo(servePx,B-7);ctx.moveTo(endPx,dimY-5);ctx.lineTo(endPx,B-7);ctx.stroke();
+ }
+ ctx.font='bold 18px system-ui';ctx.textAlign='left';
+ const distanceLabel=`後方 ${setback.toFixed(2)} m`;
+ ctx.fillText(distanceLabel,Math.min(Math.max(servePx+8,L+4),R-300),B-68);
+ ctx.textAlign='left';
  // Attack-line positions: red downward triangles only at x=6 m and x=12 m
  ctx.fillStyle='#ef4444';
- for(const ax of [6,12]){
+ for(const ax of [setback+6,setback+12]){
   const px=X(ax), py=B-2, s=8;
   ctx.beginPath();ctx.moveTo(px-s,py-s);ctx.lineTo(px+s,py-s);ctx.lineTo(px,py+s);ctx.closePath();ctx.fill();
  }
  // Mark the trajectory peak and the ball height where it crosses the net plane
- const peak=points.reduce((best,p)=>p.z>best.z?p:best,points[0]);
- const netCrossIndex=points.findIndex(p=>p.x>=9);
- let netCross=points[Math.max(0,netCrossIndex)];
+ const peak=annotationPoints.reduce((best,p)=>p.z>best.z?p:best,annotationPoints[0]);
+ const netCrossIndex=annotationPoints.findIndex(p=>p.x>=netPos);
+ let netCross=annotationPoints[Math.max(0,netCrossIndex)];
  if(netCrossIndex>0){
-  const p0=points[netCrossIndex-1], p1=points[netCrossIndex];
-  const f=(9-p0.x)/(p1.x-p0.x);
-  netCross={x:9,z:p0.z+(p1.z-p0.z)*f};
+  const p0=annotationPoints[netCrossIndex-1], p1=annotationPoints[netCrossIndex];
+  const f=(netPos-p0.x)/(p1.x-p0.x);
+  netCross={x:netPos,z:p0.z+(p1.z-p0.z)*f};
  }
- const peakX=X(peak.x), peakY=Y(peak.z), netX=X(9), crossY=Y(netCross.z);
+ const peakX=X(peak.x), peakY=Y(peak.z), netX=X(netPos), crossY=Y(netCross.z);
  // Peak: purple marker and dotted guide
  ctx.setLineDash([4,5]);ctx.strokeStyle='#7c3aed';ctx.lineWidth=2.5;
  ctx.beginPath();ctx.moveTo(peakX,peakY);ctx.lineTo(peakX,B);ctx.stroke();ctx.setLineDash([]);
@@ -140,37 +267,352 @@ function drawSide(ballT=null){
  // ネット上端からボール下端までの垂直な隙間を赤い破線で表示
  ctx.setLineDash([5,4]);ctx.strokeStyle='#dc2626';ctx.lineWidth=3;
  ctx.beginPath();ctx.moveTo(netX,gapBottomY);ctx.lineTo(netX,gapTopY);ctx.stroke();ctx.setLineDash([]);
- // 隙間ラベルはネット端部と12m地点の間に、2行で配置する
+ // 隙間のラベルは短く1行で表示する
  ctx.font='bold 18px system-ui';
  ctx.fillStyle='#dc2626';
  const crossLabelX=(netX+X(12))/2;
  // ラベルは固定高さにせず、ネット上端とボール下端（軌道）の垂直中間に追従させる
  const crossLabelY=(gapTopY+gapBottomY)/2-12;
  ctx.textAlign='center';
- ctx.fillText('ネット通過時点の',crossLabelX,crossLabelY);
- ctx.fillText('隙間 '+Math.max(0,gap).toFixed(2)+'m',crossLabelX,crossLabelY+25);
+ ctx.fillText('隙間 '+Math.max(0,gap).toFixed(2)+'m',crossLabelX,crossLabelY);
  ctx.textAlign='left';
- const ni=points.findIndex(p=>p.x>=9);const split=ni<0?points.length-1:ni;
+ const ni=annotationPoints.findIndex(p=>p.x>=netPos);const split=ni<0?annotationPoints.length-1:ni;
  function path(a,b,color,dash){ctx.beginPath();let started=false;for(let i=a;i<=b&&i<points.length;i++){let p=points[i];if(!started){ctx.moveTo(X(p.x),Y(p.z));started=true;}else ctx.lineTo(X(p.x),Y(p.z));}ctx.strokeStyle=color;ctx.lineWidth=4;ctx.setLineDash(dash);ctx.stroke();ctx.setLineDash([]);}
- path(0,split,'#2f6bff',[]);
- if(ni>=0)path(split,points.length-1,'#2f6bff',[3,7]);
+ // 各角度の軌道をネット位置で分割。ネット手前は実線、ネット通過後は破線。
+ // フォールトは赤、インは青。選択中の軌道は最後に太く描画する。
+ function drawSplitTrajectory(arr,color,width){
+  if(!arr||arr.length<2)return;
+  let k=arr.findIndex(p=>p.x>=netPos);
+  if(k<0){ctx.beginPath();arr.forEach((p,i)=>i?ctx.lineTo(X(p.x),Y(p.z)):ctx.moveTo(X(p.x),Y(p.z)));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash([]);ctx.stroke();return;}
+  if(k===0)k=1;
+  ctx.beginPath();for(let i=0;i<=k&&i<arr.length;i++){const p=arr[i];i===0?ctx.moveTo(X(p.x),Y(p.z)):ctx.lineTo(X(p.x),Y(p.z));}
+  ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash([]);ctx.stroke();
+  ctx.beginPath();for(let i=k;i<arr.length;i++){const p=arr[i];i===k?ctx.moveTo(X(p.x),Y(p.z)):ctx.lineTo(X(p.x),Y(p.z));}
+  ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash([5,5]);ctx.stroke();ctx.setLineDash([]);
+ }
+ if(showMany){
+  // 赤が連続する区間をまとめて判定する。
+  // 青に挟まれた赤は全て表示。イン側の青からアウト側へ移った直後の赤1本を残し、
+  // その先で連続する赤は省略する（角度リストの先頭・末尾かどうかでは判定しない）。
+  for(let i=0;i<angleLines.length;){
+   const item=angleLines[i];
+   if(!item.judge.fault){
+    drawSplitTrajectory(item.points,'#2f6bff',0.75);
+    i++;
+    continue;
+   }
+   let end=i;
+   while(end+1<angleLines.length && angleLines[end+1].judge.fault) end++;
+   const blueBefore = i>0 && !angleLines[i-1].judge.fault;
+   const blueAfter = end<angleLines.length-1 && !angleLines[end+1].judge.fault;
+   const boundedByBlue = blueBefore && blueAfter;
+   // 青に挟まれた赤は全て表示。赤が連続して片側の青に接する場合は、
+   // その青に最も近い赤1本だけを表示する（角度リスト先頭側なら end、末尾側なら i）。
+   let firstToDraw=i, lastToDraw=end;
+   if(!boundedByBlue){
+    if(blueBefore){ firstToDraw=i; lastToDraw=i; }
+    else if(blueAfter){ firstToDraw=end; lastToDraw=end; }
+   }
+   for(let j=firstToDraw;j<=lastToDraw;j++) drawSplitTrajectory(angleLines[j].points,'#ef4444',1.0);
+   i=end+1;
+  }
+ }
+ // 太線は、複数表示ONでは中央の40°軌道、OFFでは現在選択中の軌道を示す。
+ const emphasizedPoints = showMany && annotationItem ? annotationItem.points : points;
+ const emphasizedJudge = showMany && annotationItem ? annotationItem.judge : judgeTrajectory(points, setback);
+ drawSplitTrajectory(emphasizedPoints, emphasizedJudge.fault ? '#ef4444' : '#2f6bff', 4);
  // Draw the net after the trajectory so its solid line is clearly in the foreground
  ctx.setLineDash([]);ctx.strokeStyle='#475569';ctx.lineWidth=4;
  ctx.beginPath();ctx.moveTo(netX,Y(0));ctx.lineTo(netX,Y(netH));ctx.stroke();
  ctx.fillStyle='#334155';ctx.font='bold 21px system-ui';ctx.textAlign='left';ctx.fillText('ネット 2.24m',netX+10,Y(1)-6);ctx.textAlign='left';
  const b=ballT===null?points[0]:points.reduce((a,p)=>Math.abs(p.t-ballT)<Math.abs(a.t-ballT)?p:a,points[0]);
- ctx.fillStyle='#f59e0b';ctx.strokeStyle='#9a4c06';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X(b.x),Y(b.z),6,0,Math.PI*2);ctx.fill();ctx.stroke();
+ // ボール本体と縫い目。再生時はシミュレーション時刻に合わせて縫い目を回転。
+ const bx=X(b.x),by=Y(b.z),br=7;
+ ctx.fillStyle='#f59e0b';ctx.strokeStyle='#9a4c06';ctx.lineWidth=2;ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fill();ctx.stroke();
 }
+function simulate3D(yawDeg,elevDeg=+$('angle').value){ return simulate(elevDeg,yawDeg); }
+let topMarkers=[]; let selectedTriangleTarget=null; let optimizedDirection=null;
+function clockForElevation(deg){const h=((3-deg/30)%12+12)%12||12;const r=Math.round(h*2)/2;return Number.isInteger(r)?`${r}時`:`${Math.floor(r)}時半`;}
+function clockForYaw(deg){if(deg===0)return '0時（正面）';const h=deg>0?12-deg/30:12+Math.abs(deg)/30;const norm=((h%12)+12)%12;const r=Math.round(norm*2)/2;return `${Number.isInteger(r)?r:`${Math.floor(r)}時半`}${Number.isInteger(r)?'時':''}`;}
+function drawTop(){
+ topMarkers=[];
+ const c=$('topView'); if(!c)return;
+ const ctx=c.getContext('2d'),W=c.width,H=c.height;
+ ctx.clearRect(0,0,W,H);ctx.fillStyle='#fbfdff';ctx.fillRect(0,0,W,H);
+ const setback=+$('setback').value, lateralStart=+$('serveLateral').value;
+ const scale=25,courtW=9*scale,courtH=18*scale,cx=(W-courtW)/2,rightX=cx+courtW,bottom=610;
+ const Y=forward=>bottom-forward*scale, X=lat=>rightX-lat*scale;
+ const netPos=9+setback, farEnd=18+setback;
+ // コートを描画。右サイドラインを0m、左を9mとして、前後方向はサーブ位置からの距離で統一。
+ ctx.fillStyle='#eaf5ed';ctx.fillRect(cx,Y(farEnd),courtW,courtH);
+ ctx.strokeStyle='#25634b';ctx.lineWidth=3;ctx.strokeRect(cx,Y(farEnd),courtW,courtH);
+ ctx.strokeStyle='#8ba99a';ctx.lineWidth=1.5;
+ for(const fx of [setback+6,setback+12]){ctx.beginPath();ctx.moveTo(cx,Y(fx));ctx.lineTo(rightX,Y(fx));ctx.stroke();ctx.fillStyle='#ef4444';const py=Y(fx),q=8;ctx.beginPath();ctx.moveTo(cx+courtW/2-q,py-q);ctx.lineTo(cx+courtW/2+q,py-q);ctx.lineTo(cx+courtW/2,py+q);ctx.closePath();ctx.fill();}
+ ctx.strokeStyle='#475569';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(cx,Y(netPos));ctx.lineTo(rightX,Y(netPos));ctx.stroke();
+ ctx.fillStyle='#334155';ctx.font='bold 17px system-ui';ctx.textAlign='center';ctx.fillText('ネット',cx+courtW/2,Y(netPos)-9);
+ ctx.fillStyle='#355e4b';ctx.fillText('相手コート',cx+courtW/2,Y((netPos+farEnd)/2));ctx.fillText('自陣コート',cx+courtW/2,Y((setback+netPos)/2));
+ ctx.font='14px system-ui';ctx.textAlign='right';ctx.fillStyle='#536782';ctx.fillText('左サイドライン（9m）',cx-10,Y(setback+1));ctx.textAlign='left';ctx.fillText('右サイドライン（0m）',rightX+10,Y(setback+1));
+ const serveX=X(lateralStart),serveY=Y(0);
+ ctx.fillStyle='#f59e0b';ctx.strokeStyle='#9a4c06';ctx.lineWidth=2;ctx.beginPath();ctx.arc(serveX,serveY,7,0,Math.PI*2);ctx.fill();ctx.stroke();
+ ctx.fillStyle='#334155';ctx.textAlign='center';ctx.font='bold 15px system-ui';ctx.fillText('サーブ位置',serveX,serveY+22);
+ // 矢印は通常時は現在の左右角度、立ち位置最適化後はその立ち位置で選んだ最適方向を示す。
+ const directionYaw=optimizedDirection?optimizedDirection.yaw:(+$('lateralAngle').value);
+ const arrowLen=100,rad=directionYaw*Math.PI/180,ax=serveX-Math.sin(rad)*arrowLen,ay=serveY-Math.cos(rad)*arrowLen;
+ ctx.strokeStyle='#dc2626';ctx.fillStyle='#dc2626';ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(serveX,serveY-2);ctx.lineTo(ax,ay);ctx.stroke();
+ const head=17,perp=0.55;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax+head*Math.sin(rad+perp),ay+head*Math.cos(rad+perp));ctx.lineTo(ax+head*Math.sin(rad-perp),ay+head*Math.cos(rad-perp));ctx.closePath();ctx.fill();
+ // 立ち位置の寸法はサーブ位置マーカーのすぐ右に大きく表示
+ const dimW=204,dimH=58;let dimX=serveX+18,dimY=serveY-dimH-12;if(dimX+dimW>W-8)dimX=serveX-dimW-18;if(dimY<8)dimY=serveY+14;
+ ctx.fillStyle='#fff';ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.4;ctx.beginPath();ctx.roundRect(dimX,dimY,dimW,dimH,7);ctx.fill();ctx.stroke();ctx.fillStyle='#334155';ctx.textAlign='left';ctx.font='bold 18px system-ui';ctx.fillText(`右から ${lateralStart.toFixed(2)}m`,dimX+10,dimY+23);ctx.fillText(`後ろへ ${setback.toFixed(2)}m`,dimX+10,dimY+46);
+ function landingInfo(arr){
+  const land=landing3D(arr);let netZ=null;
+  for(let i=1;i<arr.length;i++)if(arr[i].x>=netPos){const a=arr[i-1],b=arr[i],f=(netPos-a.x)/(b.x-a.x);netZ=a.z+(b.z-a.z)*f;break;}
+  const lateral=lateralStart+land.y;
+  const inLength=land.x>=netPos&&land.x<=farEnd, inWidth=lateral>=0&&lateral<=9;
+  const clearsNet=netZ!==null&&netZ-ballR>netH;
+  let reason='イン';if(!clearsNet)reason='ネットにかかる、またはネットまで届かない';else if(!inLength)reason='前後方向がコート外';else if(!inWidth)reason='左右方向がコート外';
+  return {land,lateral,fault:!(inLength&&inWidth&&clearsNet),reason};
+ }
+ function visibleForYaw(yaw){
+  const candidates=[];
+  for(let a=2;a<=88;a+=2){
+   const tr=simulate(a,yaw);
+   candidates.push({angle:a,points:tr,judge:judgeTrajectory(tr,setback),yaw});
+  }
+  // インでも、低い角度よりネットから遠くなる落下点は原則省略する。
+  // ネットミス・ネット手前落下の仮想着地点は省略する。
+  // サイドアウトは従来どおり残し、エンドラインを越えるアウトも落下点を残す。
+  const kept=[];
+  // 高さ角度を低い順に比較し、相手側コートでの落下位置を判定する。
+  // 低角度側の落下位置よりネットから遠い高角度側の点は省略。
+  // 低角度側の落下位置よりネットに近い高角度側の点は三角形で示す。
+  let farthestLowerLanding=-Infinity;
+  // まず、この方向で最初に現れる通常のインの丸（最もネットに近い丸）の位置を求める。
+  let firstCircleX=null;
+  for(const item of candidates){
+   const info=landingInfo(item.points);
+   if(!item.judge.fault && info.land.x >= netPos && info.land.x <= farEnd){
+    firstCircleX=info.land.x;
+    break;
+   }
+  }
+  for(const item of candidates){
+   const itemLandX=landingInfo(item.points).land.x;
+   // 低い角度側の落下位置と比較する。低い角度より遠くなる点は原則省略。
+   item.shorterThanLower = itemLandX < farthestLowerLanding - 0.05;
+   item.omitLanding = itemLandX > farthestLowerLanding + 0.05;
+   const isEndlineOut = item.judge.reason === 'エンドラインを越える';
+   if(itemLandX > farthestLowerLanding) farthestLowerLanding=itemLandX;
+   if(item.omitLanding && !isEndlineOut) continue;
+   // 三角を置ける範囲は、ネットから最初の通常イン丸までに限定する。
+   item.triangleZone = firstCircleX !== null && itemLandX < firstCircleX - 0.05;
+   // インは表示対象。三角候補の距離比較は描画時にも適用する。
+   if(!item.judge.fault){ kept.push(item); continue; }
+   const info=landingInfo(item.points);
+   const clearsNet=item.judge.netZ!==null && item.judge.netZ-ballR>netH;
+   if(!clearsNet) continue;
+   if(item.judge.reason==='左右サイドラインを越える'){
+    // サイドアウトは、ネットを越えて相手コート側に着地するものだけ表示。
+    if(info.land.x>=netPos) kept.push(item);
+   }else if(item.judge.reason==='エンドラインを越える'){
+    // エンドラインアウトは、実際の落下点を上から見た図に残す。
+    kept.push(item);
+   }
+  }
+  return kept;
+ }
+ const yawValues=[];
+ if(showMany){ for(let yaw=-30;yaw<=30;yaw+=2) yawValues.push(yaw); }
+ else yawValues.push(+$('lateralAngle').value);
+ let pointCount=0, selectedInfo=null;
+ for(const yaw of yawValues){
+  const set=showMany?visibleForYaw(yaw):[{angle:+$('angle').value,points:simulate(+$('angle').value,yaw),judge:null,yaw}];
+  for(const item of set){
+   const info=landingInfo(item.points);
+   const isEmphasis= !showMany && yaw===+$('lateralAngle').value && item.angle===+$('angle').value;
+   let px,py,color;
+   if(item.judge && item.judge.reason==='ネットにかかる'){
+    // ネットにかかる軌道も、ネット上ではなく同じ角度の仮想着地点に赤点を置く。
+    // これによりネット位置に点が横一線に並ばず、左右方向ごとの結果を比較できる。
+    px=X(info.lateral); py=Y(info.land.x); color='#ef4444';
+   }else{
+    px=X(info.lateral); py=Y(info.land.x); color=info.fault?'#ef4444':'#2f6bff';
+   }
+   pointCount++;
+   const isTriangle=showMany && item.shorterThanLower && item.triangleZone && info.lateral >= 0 && info.lateral <= 9;
+   topMarkers.push({x:px,y:py,triangle:isTriangle,angle:item.angle,yaw:item.yaw,info});
+   if(showMany && item.shorterThanLower && item.triangleZone && info.lateral >= 0 && info.lateral <= 9){
+    // 高い角度なのに低い角度よりネットに近い位置へ落ちる軌道は三角形。ただしサイドライン外（緑枠の範囲）は通常の丸で表示する。
+    // ただし、通常のイン点を優先する設定は visibleForYaw 側で適用し、描画側では距離比較の結果を反映する。
+    const r=isEmphasis?8:4.5;
+    ctx.beginPath();ctx.moveTo(px,py-r);ctx.lineTo(px+r,py+r);ctx.lineTo(px-r,py+r);ctx.closePath();
+    if(info.fault){ctx.fillStyle='#ef4444';ctx.fill();}else{ctx.fillStyle='#ffffff';ctx.fill();ctx.strokeStyle='#2f6bff';ctx.lineWidth=1.8;ctx.stroke();}
+    if(isEmphasis){ctx.strokeStyle='#ffffff';ctx.lineWidth=2.5;ctx.stroke();}
+   }else{
+    ctx.beginPath();ctx.arc(px,py,isEmphasis?7:3.2,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+    if(isEmphasis){ctx.strokeStyle='#ffffff';ctx.lineWidth=2.5;ctx.stroke();}
+   }
+   if(isEmphasis){selectedInfo={info,item,px,py};}
+  }
+ }
+ ctx.fillStyle='#ffffff';ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(28,22,340,62,8);ctx.fill();ctx.stroke();
+ ctx.textAlign='left';ctx.font='bold 15px system-ui';ctx.fillStyle='#2f6bff';ctx.beginPath();ctx.arc(43,42,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(55,37);ctx.lineTo(60,47);ctx.lineTo(50,47);ctx.closePath();ctx.fillStyle='#ffffff';ctx.fill();ctx.strokeStyle='#2f6bff';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#334155';ctx.fillText('青丸＝イン　青三角＝高角度側が手前に落ちる（サイドライン外は丸）',68,47);
+ ctx.fillStyle='#64748b';ctx.beginPath();ctx.arc(47,64,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#334155';ctx.fillText(`表示点 ${pointCount} 点（青＝イン、赤＝サイドアウト。上下角度のアウトは省略）`,60,69);
+ $('lateralAngleOut').textContent=(+$('lateralAngle').value>0?'+':'')+$('lateralAngle').value+'°';$('serveLateralOut').textContent=lateralStart.toFixed(2)+' m';
+ const currentAngle=+$('angle').value,currentYaw=+$('lateralAngle').value;
+ $('currentDirectionLabel').textContent=optimizedDirection?`現在の角度：高さ方向 ${clockForElevation(currentAngle)}、左右 ${clockForYaw(currentYaw)}｜この立ち位置の最適方向：高さ方向 ${clockForElevation(optimizedDirection.angle)}、左右 ${clockForYaw(optimizedDirection.yaw)}`:`現在の角度：高さ方向 ${clockForElevation(currentAngle)}、左右 ${clockForYaw(currentYaw)}`; 
+ if(selectedInfo){const {info}=selectedInfo;$('topResult').textContent=info.fault?'フォールト：'+info.reason:'イン：着地点が相手コート内';$('topResult').classList.toggle('fault',info.fault);}
+ else {$('topResult').textContent='表示中の着地点はありません';$('topResult').classList.remove('fault');}
+}
+
 function stop(){playing=false;if(raf)cancelAnimationFrame(raf);raf=null;started=null;$('play').textContent='▶ 再生';}
 function frame(ts){if(!playing)return;if(started===null)started=ts;const t=(ts-started)/1000;const end=points.at(-1).t;if(t>=end){stop();drawSide();return;}drawSide(t);raf=requestAnimationFrame(frame);}
+$('modeToggle').addEventListener('change',()=>{showMany=$('modeToggle').checked;stop();calc();$('trajectoryDiff').textContent=showMany?'2°刻みの軌道を表示中。インは青、フォールトは赤、選択中は太い青線です。補助表示は中央の40°軌道を基準にしています。':'選択中の角度だけを表示中。補助表示も選択中の軌道を基準にしています。';});
 $('play').addEventListener('click',()=>{if(playing){stop();drawSide();return;}playing=true;started=null;$('play').textContent='⏸ 停止';raf=requestAnimationFrame(frame);});
 $('reset').addEventListener('click',()=>{stop();calc();});
-['speed','angle','height'].forEach(id=>{
+['speed','angle','height','setback'].forEach(id=>{
  const slider=$(id);
- slider.addEventListener('input',()=>{stop();calc();});
+ slider.addEventListener('input',()=>{optimizedDirection=null;stop();calc();if(id==='angle')updateAngleClock();});
  // Keep native range dragging active; pointer interaction should not require repeated clicks.
  slider.addEventListener('pointerdown',()=>{slider.focus({preventScroll:true});});
 });
+$('setbackTop').addEventListener('input',()=>{ optimizedDirection=null;$('setback').value=$('setbackTop').value; stop(); calc(); });
+function updateAngleClock(){
+ const deg=+$('angle').value;
+ const rad=-deg*Math.PI/180;
+ const x=110+66*Math.cos(rad),y=110+66*Math.sin(rad);
+ $('angleRay').setAttribute('x2',x);$('angleRay').setAttribute('y2',y);
+ const ah=10, a1=rad+Math.PI*.82, a2=rad-Math.PI*.82;
+ $('angleArrow').setAttribute('d',`M${x+ah*Math.cos(a1)} ${y+ah*Math.sin(a1)} L${x} ${y} L${x+ah*Math.cos(a2)} ${y+ah*Math.sin(a2)}`);
+ const clockHour=((3-deg/30)%12+12)%12 || 12;
+ const rounded=Math.round(clockHour*2)/2;
+ const label=Number.isInteger(rounded)?`${rounded}時方向`: `${Math.floor(rounded)}時半方向`;
+ $('contactPositionLabel').textContent=label;
+ // 複数軌道表示時は、時計の中心から外周まで扇形でイン／アウトを色分けする。
+ const sectorGroup=$('clockSectors'), arc=$('inRangeArc'), rangeLabel=$('inClockRangeLabel');
+ sectorGroup.innerHTML='';
+ arc.setAttribute('d','');arc.style.display='none';
+ if(showMany && angleLines.length){
+  // 12時〜3時の範囲を、2°刻みの各軌道の判定色で塗り分ける。
+  // 時計の角度は水平右（3時）= 0°、真上（12時）= 90°。
+  const ns='http://www.w3.org/2000/svg';
+  const cx=110,cy=110,r=71;
+  const sorted=[...angleLines].sort((a,b)=>a.angle-b.angle);
+  const bounds=[0,...sorted.map(it=>it.angle),90];
+  for(let i=0;i<bounds.length-1;i++){
+   const a0=bounds[i],a1=bounds[i+1];
+   const mid=(a0+a1)/2;
+   const nearest=sorted.reduce((best,it)=>Math.abs(it.angle-mid)<Math.abs(best.angle-mid)?it:best,sorted[0]);
+   const p0={x:cx+r*Math.cos(-a0*Math.PI/180),y:cy+r*Math.sin(-a0*Math.PI/180)};
+   const p1={x:cx+r*Math.cos(-a1*Math.PI/180),y:cy+r*Math.sin(-a1*Math.PI/180)};
+   const path=document.createElementNS(ns,'path');
+   path.setAttribute('d',`M${cx},${cy} L${p0.x},${p0.y} A${r},${r} 0 0 0 ${p1.x},${p1.y} Z`);
+   path.setAttribute('fill',nearest.judge.fault?'#ef4444':'#22c55e');
+   path.setAttribute('fill-opacity','0.68');
+   path.setAttribute('stroke','white');path.setAttribute('stroke-width','0.8');
+   sectorGroup.appendChild(path);
+  }
+  const inAngles=sorted.filter(item=>!item.judge.fault).map(item=>item.angle).sort((a,b)=>a-b);
+  if(inAngles.length){
+   const ranges=[];
+   for(const a of inAngles){const last=ranges[ranges.length-1];if(last&&a===last[1]+2)last[1]=a;else ranges.push([a,a]);}
+   const clockFor=a=>{const h=((3-a/30)%12+12)%12||12;const r=Math.round(h*2)/2;return Number.isInteger(r)?`${r}時`:`${Math.floor(r)}時半`;};
+   const netAngle=Math.atan((2.24-+$('height').value)/(9+ +$('setback').value))*180/Math.PI;
+   rangeLabel.textContent=`ネット：${clockFor(netAngle)}　`+ranges.map(([lo,hi])=>`${clockFor(lo)}～${clockFor(hi)}`).join('、')+'（緑＝イン、赤＝アウト）';
+  } else {
+   rangeLabel.textContent='時計の扇形：この条件ではインになる角度がありません（赤＝アウト）';
+  }
+ }else{
+  rangeLabel.textContent='軌道たくさん表示をONにすると、時計の中心から扇形でイン／アウトを表示します';
+ }
+
+}
+updateAngleClock();
+$('topSpeed').addEventListener('input',()=>{$('speed').value=$('topSpeed').value;optimizedDirection=null;stop();calc();});
+$('lateralAngle').addEventListener('input',()=>{optimizedDirection=null;stop();calc();});
+$('serveLateral').addEventListener('input',()=>{optimizedDirection=null;stop();calc();});
 $('drag').addEventListener('change',()=>{stop();calc();});
 calc();
+
+// 初速・打点の高さ・空気抵抗を固定し、立ち位置だけを探索する。
+// 上から見た図の●/▲表示や描画処理は変更しない。
+$('optimizePosition').addEventListener('click',()=>{
+ const button=$('optimizePosition'),out=$('positionOptimizeResult');
+ button.disabled=true;button.textContent='探索中…';out.style.display='block';
+ out.textContent='インになる軌道が最も多い立ち位置を探索しています…';
+ setTimeout(()=>{
+  try{
+   // 全候補軌道を一度だけ計算し、候補位置ごとの判定は通常のイン判定関数をそのまま使う。
+   const trajectories=[];
+   for(let yaw=-30;yaw<=30;yaw+=2){
+    for(let angle=2;angle<=88;angle+=2){
+     const tr=simulate(angle,yaw);
+     trajectories.push({tr,land:landing3D(tr),angle,yaw});
+    }
+   }
+   let best=null;
+   for(let si=0;si<=20;si++){
+    const setback=si*0.25;
+    for(let li=0;li<=12;li++){
+     const lateralStart=li*0.25;
+     let totalIn=0;
+     for(const q of trajectories){
+      if(!judgeTrajectory(q.tr,setback,lateralStart).fault) totalIn++;
+     }
+     const cand={setback,lateralStart,totalIn};
+     if(!best || cand.totalIn>best.totalIn ||
+       (cand.totalIn===best.totalIn && cand.setback>best.setback) ||
+       (cand.totalIn===best.totalIn && cand.setback===best.setback && cand.lateralStart<best.lateralStart)) best=cand;
+    }
+   }
+   // 最適な位置で、インになる軌道のうち着地点が相手コート中央に最も近い方向を矢印にする。
+   let bestDir=null;
+   for(const q of trajectories){
+    if(judgeTrajectory(q.tr,best.setback,best.lateralStart).fault) continue;
+    const centerDist=Math.hypot(q.land.x-(13.5+best.setback),best.lateralStart+q.land.y-4.5);
+    const cand={angle:q.angle,yaw:q.yaw,centerDist};
+    if(!bestDir || cand.centerDist<bestDir.centerDist) bestDir=cand;
+   }
+   optimizedDirection=bestDir||null;
+   $('setback').value=best.setback;$('setbackTop').value=best.setback;$('serveLateral').value=best.lateralStart;
+   stop();calc();
+   out.textContent=`最適な立ち位置：右 ${best.lateralStart.toFixed(2)} m、後 ${best.setback.toFixed(2)} m。`;
+  }catch(e){out.textContent='最適化中にエラーが発生しました。設定を確認して、もう一度試してください。';console.error(e);}
+  button.disabled=false;button.textContent='立ち位置を最適化';
+ },30);
+});
+
+
+// 青い三角を選ぶと、その三角の高さ方向の角度を時計表示し、選択内容を保存する。
+$('topView').addEventListener('click',ev=>{
+ const c=$('topView'),rect=c.getBoundingClientRect();const x=(ev.clientX-rect.left)*c.width/rect.width,y=(ev.clientY-rect.top)*c.height/rect.height;
+ let best=null,dist=Infinity;for(const m of topMarkers){if(!m.triangle)continue;const d=Math.hypot(m.x-x,m.y-y);if(d<dist){dist=d;best=m;}}
+ if(!best||dist>18)return;
+ selectedTriangleTarget={angle:best.angle,yaw:best.yaw};optimizedDirection=null;
+ $('angle').value=best.angle;$('lateralAngle').value=best.yaw;stop();calc();updateAngleClock();
+ $('triangleTargetHint').textContent=`選択中：高さ方向 ${clockForElevation(best.angle)}、左右 ${best.yaw>0?`左へ ${best.yaw}°`:best.yaw<0?`右へ ${Math.abs(best.yaw)}°`:'正面'}`;
+ $('positionOptimizeResult').style.display='block';$('positionOptimizeResult').textContent=`選択した三角：高さ方向 ${clockForElevation(best.angle)}。立ち位置再設定ボタンで、この軌道がインになる位置を優先して探します。`;
+});
+$('resetPositionForTriangle').addEventListener('click',()=>{
+ const out=$('positionOptimizeResult');out.style.display='block';
+ if(!selectedTriangleTarget){out.textContent='先に上から見た図の青い三角をクリックしてください。';return;}
+ const btn=$('resetPositionForTriangle');btn.disabled=true;btn.textContent='再設定中…';
+ setTimeout(()=>{try{
+  const {angle,yaw}=selectedTriangleTarget;let best=null;
+  // 選択した三角の軌道がインになる候補を優先し、同条件では他のイン軌道数を最大化。
+  const all=[];for(let yy=-30;yy<=30;yy+=2)for(let aa=2;aa<=88;aa+=2){const tr=simulate(aa,yy);all.push({land:landing3D(tr),tr});}
+  const chosenTr=simulate(angle,yaw),chosenLand=landing3D(chosenTr);
+  for(let si=0;si<=20;si++){const setback=si*.25,netX=9+setback,farX=18+setback;
+   const clears=all.map(q=>{const z=heightAtX(q.tr,netX);return z!==null&&z-ballR>netH;});
+   const cz=heightAtX(chosenTr,netX),chosenClear=cz!==null&&cz-ballR>netH;
+   for(let li=0;li<=12;li++){const lateralStart=li*.25,lat=lateralStart+chosenLand.y;
+    const selectedIn=chosenClear&&chosenLand.x>=netX&&chosenLand.x<=farX&&lat>=0&&lat<=9;
+    let totalIn=0;for(let i=0;i<all.length;i++){const l=all[i].land;if(clears[i]&&l.x>=netX&&l.x<=farX&&lateralStart+l.y>=0&&lateralStart+l.y<=9)totalIn++;}
+    const cand={setback,lateralStart,selectedIn,totalIn};if(!best||(cand.selectedIn&&!best.selectedIn)||(cand.selectedIn===best.selectedIn&&(cand.totalIn>best.totalIn||(cand.totalIn===best.totalIn&&(cand.setback>best.setback||(cand.setback===best.setback&&cand.lateralStart<best.lateralStart))))))best=cand;
+   }
+  }
+  $('setback').value=best.setback;$('setbackTop').value=best.setback;$('serveLateral').value=best.lateralStart;$('angle').value=angle;$('lateralAngle').value=yaw;stop();calc();updateAngleClock();
+  out.textContent=`立ち位置：右 ${best.lateralStart.toFixed(2)} m、後 ${best.setback.toFixed(2)} m。左右：${clockForYaw(yaw)}、高さ方向：${clockForElevation(angle)}。`;
+ }catch(e){out.textContent='立ち位置の再設定に失敗しました。';console.error(e);}finally{btn.disabled=false;btn.textContent='選択した三角に合わせて立ち位置を再設定';}},30);
+});
+
 </script></body></html>
